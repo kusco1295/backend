@@ -15,5 +15,6 @@ router.put('/:id', protect, upload.single('attachment'), (req, res) => customerC
 router.delete('/:id', protect, (req, res) => customerController.delete(req, res));
 router.post('/:id/comment', protect, (req, res) => customerController.addComment(req, res));
 router.post('/:id/forward', protect, upload.array('attachments', 10), (req, res) => customerController.forwardInquiry(req, res));
+router.post('/:id/share-document', protect, upload.single('attachment'), (req, res) => customerController.shareDocument(req, res));
 
 module.exports = router;

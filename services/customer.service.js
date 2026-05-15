@@ -52,6 +52,21 @@ class CustomerService {
     return customer;
   }
 
+  async shareDocument(id, { documentType, department, sharedBy, fromDept, comment, attachment }) {
+    const customer = await Customer.findById(id);
+    if (!customer) throw new Error('Customer not found');
+    customer.documentShares.push({
+      type: documentType,
+      fromDept,
+      toDept: department,
+      sharedBy,
+      comment,
+      attachment,
+    });
+    await customer.save();
+    return customer;
+  }
+
   async deleteCustomer(id) {
     const customer = await Customer.findByIdAndDelete(id);
     if (!customer) throw new Error('Customer not found');

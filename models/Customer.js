@@ -28,6 +28,17 @@ const customerSchema = new mongoose.Schema(
         createdAt:   { type: Date, default: Date.now },
       },
     ],
+    documentShares: [
+      {
+        type:        { type: String, trim: true },
+        fromDept:    { type: String, trim: true },
+        toDept:      { type: String, trim: true },
+        sharedBy:    { type: String, trim: true },
+        comment:     { type: String, trim: true },
+        attachment:  { type: String, trim: true },
+        createdAt:   { type: Date, default: Date.now },
+      },
+    ],
     comments: [
       {
         text:       { type: String, trim: true },
