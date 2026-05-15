@@ -5,6 +5,10 @@ class CustomerService {
     return await Customer.find().sort({ createdAt: -1 });
   }
 
+  async getCustomerById(id) {
+    return await Customer.findById(id);
+  }
+
   async createCustomer({ name, email, phone, company, address, equipmentName, make, modelNo, liquid, temperature, pressure, attachments, description, department }) {
     if (!name) throw new Error('Customer name is required');
     const count = await Customer.countDocuments();
