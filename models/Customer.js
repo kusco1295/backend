@@ -47,6 +47,16 @@ const customerSchema = new mongoose.Schema(
         createdAt:  { type: Date, default: Date.now },
       },
     ],
+    emailHistory: [
+      {
+        subject:   { type: String, trim: true },
+        body:      { type: String, trim: true },
+        cc:        { type: String, trim: true },
+        attachment: { type: String, trim: true },
+        sentBy:    { type: String, trim: true },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
   },
   { timestamps: true }
 );

@@ -17,5 +17,7 @@ router.post('/:id/comment', protect, (req, res) => customerController.addComment
 router.post('/:id/forward', protect, upload.array('attachments', 10), (req, res) => customerController.forwardInquiry(req, res));
 router.post('/:id/share-document', protect, upload.single('attachment'), (req, res) => customerController.shareDocument(req, res));
 router.post('/:id/send-doc-email', protect, (req, res) => customerController.sendDocumentEmail(req, res));
+router.post('/forward-email', protect, (req, res) => customerController.forwardEmail(req, res));
+router.get('/incoming-emails', protect, (req, res) => customerController.getIncomingEmails(req, res));
 
 module.exports = router;

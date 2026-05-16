@@ -1,3 +1,4 @@
+const Customer = require('../models/Customer');
 const customerService = require('../services/customer.service');
 const adminService    = require('../services/admin.service');
 const emailService    = require('../services/email.service');
@@ -169,7 +170,69 @@ class CustomerController {
         ]
       });
 
+      // Log to email history
+      const admin = await adminService.getAdminById(req.user.id);
+      customer.emailHistory.push({
+        subject: emailSubject,
+        body: emailText,
+        cc: emailCc,
+        attachment: filename,
+        sentBy: admin.name,
+      });
+      await customer.save();
+
       return successResponse(res, {}, 'Email sent successfully', 200);
+    } catch (error) {
+      return errorResponse(res, error.message, 500, error);
+    }
+  }
+
+  async getIncomingEmails(req, res) {
+    try {
+      const emails = await emailService.fetchIncomingEmails();
+      return successResponse(res, { emails }, 'Incoming emails fetched successfully', 200);
+    } catch (error) {
+      return errorResponse(res, error.message, 500, error);
+    }
+  }
+
+  async forwardEmail(req, res) {
+    try {
+      const { toDept, comment, originalEmail } = req.body;
+      if (!toDept) return errorResponse(res, 'Target department is required', 400);
+      if (!comment) return errorResponse(res, 'Comment is required', 400);
+      if (!originalEmail) return errorResponse(res, 'Original email content is required', 400);
+
+      const admin = await adminService.getAdminById(req.user.id);
+      
+      // Find a customer by email to link this forward, or create a placeholder if needed
+      // For now, we try to find the customer from the "from" address of the email
+      const fromEmailMatch = originalEmail.from?.match(/<(.+)>/)?.[1] || originalEmail.from;
+      let customer = await Customer.findOne({ email: fromEmailMatch?.toLowerCase() });
+
+      if (!customer) {
+        // Create a minimal placeholder customer if not found to store the document share
+        customer = new Customer({
+          name: originalEmail.from?.split('<')[0]?.trim() || 'Unknown Sender',
+          email: fromEmailMatch?.toLowerCase() || 'unknown@example.com',
+          company: 'Email Forward',
+          department: 'Sales Dept'
+        });
+        await customer.save();
+      }
+
+      // Add to documentShares as an email_forward type
+      customer.documentShares.push({
+        type: 'email_forward',
+        fromDept: admin.department || 'Sales Dept',
+        toDept: toDept,
+        sharedBy: admin.name || 'Admin',
+        comment: `${comment}\n\n--- Forwarded Email ---\nSubject: ${originalEmail.subject}\nFrom: ${originalEmail.from}\n\n${originalEmail.body}`,
+        attachment: originalEmail.attachment || '', // Keep original attachment reference if any
+      });
+
+      await customer.save();
+      return successResponse(res, { customer }, 'Email forwarded to department successfully', 200);
     } catch (error) {
       return errorResponse(res, error.message, 500, error);
     }
