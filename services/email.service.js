@@ -45,25 +45,55 @@ class EmailService {
         pass: process.env.EMAIL_PASS,
       },
       logger: false,
+      connectionTimeout: 30000,
+      greetingTimeout: 30000,
     });
 
     const emails = [];
+    const fs = require('fs');
+    const path = require('path');
+    const uploadsDir = path.join(__dirname, '../uploads');
+
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
     try {
       await client.connect();
-      let lock = await client.getMailboxLock('INBOX');
+      
+      const mailbox = await client.getMailboxLock('INBOX');
       try {
-        // Search for all messages in INBOX
-        const list = await client.fetch('1:*', {
+        const totalMessages = client.mailbox.exists;
+        const startRange = Math.max(1, totalMessages - 9); // Fetch latest 10
+        const range = `${startRange}:*`;
+
+        const list = await client.fetch(range, {
           envelope: true,
           source: true,
           uid: true,
-        }, {
-          max: 50 // Fetch more to be sure
         });
 
         for await (let msg of list) {
           try {
             const parsed = await simpleParser(msg.source);
+            const attachments = [];
+
+            if (parsed.attachments && parsed.attachments.length > 0) {
+              for (let att of parsed.attachments) {
+                // Save attachment if it's a PDF
+                if (att.contentType === 'application/pdf' || att.filename?.toLowerCase().endsWith('.pdf')) {
+                  const safeFilename = `${Date.now()}-${msg.uid}-${att.filename}`;
+                  const filePath = path.join(uploadsDir, safeFilename);
+                  fs.writeFileSync(filePath, att.content);
+                  attachments.push({
+                    filename: att.filename,
+                    path: safeFilename,
+                    contentType: att.contentType
+                  });
+                }
+              }
+            }
+
             emails.push({
               id: msg.uid,
               subject: parsed.subject || '(No Subject)',
@@ -72,6 +102,8 @@ class EmailService {
               date: parsed.date || new Date(),
               body: parsed.text || '',
               html: parsed.html || '',
+              attachments: attachments,
+              attachment: attachments.length > 0 ? attachments[0].path : '', // For frontend compatibility
               type: 'incoming'
             });
           } catch (parseError) {
@@ -79,12 +111,16 @@ class EmailService {
           }
         }
       } finally {
-        lock.release();
+        mailbox.release();
       }
-      await client.logout();
     } catch (error) {
       console.error('Error fetching emails:', error);
-      throw error;
+    } finally {
+      try {
+        await client.logout();
+      } catch (logoutError) {
+        // Ignore logout errors
+      }
     }
     return emails.sort((a, b) => new Date(b.date) - new Date(a.date));
   }
