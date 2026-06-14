@@ -88,6 +88,35 @@ class AdminService {
     };
   }
 
+  async changePassword(id, currentPassword, newPassword, confirmPassword) {
+    const admin = await Admin.findById(id);
+    if (!admin) throw new Error('Admin not found');
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      throw new Error('All password fields are required');
+    }
+
+    if (newPassword !== confirmPassword) {
+      throw new Error('New passwords do not match');
+    }
+
+    const isCurrentPasswordCorrect = await admin.comparePassword(currentPassword);
+    if (!isCurrentPasswordCorrect) {
+      throw new Error('Current password is incorrect');
+    }
+
+    admin.password = newPassword;
+    await admin.save();
+
+    return {
+      id: admin._id,
+      name: admin.name,
+      email: admin.email,
+      role: admin.role,
+      department: admin.department,
+    };
+  }
+
   async getAllAdmins() {
     const admins = await Admin.find().select('-password').sort({ createdAt: -1 });
     return admins.map((admin) => ({
@@ -112,6 +141,7 @@ class AdminService {
       email: admin.email,
       role: admin.role,
       department: admin.department,
+      createdAt: admin.createdAt,
     };
   }
 }

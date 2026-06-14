@@ -52,6 +52,22 @@ class AdminController {
     }
   }
 
+  async changePassword(req, res) {
+    try {
+      const { currentPassword, newPassword, confirmPassword } = req.body;
+      const admin = await adminService.changePassword(
+        req.user.id,
+        currentPassword,
+        newPassword,
+        confirmPassword
+      );
+
+      return successResponse(res, { admin }, 'Password updated successfully', 200);
+    } catch (error) {
+      return errorResponse(res, error.message, 400, error);
+    }
+  }
+
   async getAll(req, res) {
     try {
       const admins = await adminService.getAllAdmins();
