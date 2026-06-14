@@ -3,6 +3,7 @@ const customerService = require('../services/customer.service');
 const adminService    = require('../services/admin.service');
 const emailService    = require('../services/email.service');
 const { successResponse, errorResponse } = require('../utils/response.util');
+const { getUploadDir } = require('../utils/upload-path');
 
 class CustomerController {
   async getAll(req, res) {
@@ -135,7 +136,7 @@ class CustomerController {
 
       const path = require('path');
       const fs = require('fs');
-      const filePath = path.join(__dirname, '../uploads', filename);
+      const filePath = path.join(getUploadDir(), filename);
 
       if (!fs.existsSync(filePath)) {
         return errorResponse(res, 'File not found on server', 404);

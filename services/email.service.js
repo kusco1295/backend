@@ -1,6 +1,7 @@
 const nodemailer = require('nodemailer');
 const { ImapFlow } = require('imapflow');
 const { simpleParser } = require('mailparser');
+const { getUploadDir } = require('../utils/upload-path');
 
 class EmailService {
   constructor() {
@@ -52,11 +53,7 @@ class EmailService {
     const emails = [];
     const fs = require('fs');
     const path = require('path');
-    const uploadsDir = path.join(__dirname, '../uploads');
-
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    }
+    const uploadsDir = getUploadDir();
 
     try {
       await client.connect();

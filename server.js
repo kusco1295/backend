@@ -3,6 +3,7 @@ const cors = require('cors');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 const connectDB = require('./config/db');
+const { getUploadDir } = require('./utils/upload-path');
 const adminRoutes = require('./routes/admin');
 const taskRoutes = require('./routes/task');
 const customerRoutes = require('./routes/customer');
@@ -18,7 +19,7 @@ connectDB();
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(getUploadDir()));
 
 // Routes
 app.use('/api/admin', adminRoutes);
@@ -26,6 +27,22 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/materials', materialRoutes);
 app.use('/api/approvals', approvalRoutes);
+
+app.use((err, req, res, next) => {
+  console.error('Unhandled API error:', err);
+
+  if (err && err.name === 'MulterError') {
+    return res.status(400).json({
+      success: false,
+      message: err.message || 'File upload failed',
+    });
+  }
+
+  return res.status(500).json({
+    success: false,
+    message: 'Internal server error',
+  });
+});
 
 // Basic route
 app.get('/', (req, res) => {

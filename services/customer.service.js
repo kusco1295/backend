@@ -39,10 +39,12 @@ class CustomerService {
   }
 
   async addComment(id, text, authorName, authorDept) {
-    const customer = await Customer.findById(id);
+    const customer = await Customer.findByIdAndUpdate(
+      id,
+      { $push: { comments: { text, authorName, authorDept } } },
+      { new: true }
+    );
     if (!customer) throw new Error('Customer not found');
-    customer.comments.push({ text, authorName, authorDept });
-    await customer.save();
     return customer;
   }
 
@@ -50,24 +52,39 @@ class CustomerService {
     const customer = await Customer.findById(id);
     if (!customer) throw new Error('Customer not found');
     const fromDept = customer.forwardedTo || customer.department;
-    customer.forwardedTo = department;
-    customer.forwardHistory.push({ fromDept, toDept: department, forwardedBy, comment, attachments });
-    await customer.save();
-    return customer;
+
+    const updatedCustomer = await Customer.findByIdAndUpdate(
+      id,
+      {
+        forwardedTo: department,
+        $push: {
+          forwardHistory: { fromDept, toDept: department, forwardedBy, comment, attachments },
+        },
+      },
+      { new: true }
+    );
+
+    return updatedCustomer;
   }
 
   async shareDocument(id, { documentType, department, sharedBy, fromDept, comment, attachment }) {
-    const customer = await Customer.findById(id);
+    const customer = await Customer.findByIdAndUpdate(
+      id,
+      {
+        $push: {
+          documentShares: {
+            type: documentType,
+            fromDept,
+            toDept: department,
+            sharedBy,
+            comment,
+            attachment,
+          },
+        },
+      },
+      { new: true }
+    );
     if (!customer) throw new Error('Customer not found');
-    customer.documentShares.push({
-      type: documentType,
-      fromDept,
-      toDept: department,
-      sharedBy,
-      comment,
-      attachment,
-    });
-    await customer.save();
     return customer;
   }
 
